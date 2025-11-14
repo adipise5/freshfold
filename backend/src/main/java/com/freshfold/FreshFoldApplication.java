@@ -1,7 +1,9 @@
 package com.freshfold;
 
+import com.freshfold.config.FileStorageProperties;   // ✅ ADD THIS
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;   // ✅ ADD THIS
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -10,16 +12,12 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * Main Spring Boot Application for FreshFold Laundry Management System
  *
  * This is the entry point of the application.
- * @SpringBootApplication annotation enables:
- * - Component scanning
- * - Auto-configuration
- * - Additional configuration
  */
 @SpringBootApplication
+@EnableConfigurationProperties(FileStorageProperties.class)   // ✅ ADD THIS
 public class FreshFoldApplication {
 
     public static void main(String[] args) {
-        // ✅ This line actually starts Spring Boot + Tomcat
         SpringApplication.run(FreshFoldApplication.class, args);
 
         System.out.println("\n========================================");
@@ -29,7 +27,6 @@ public class FreshFoldApplication {
         System.out.println("🗄️ Connected Database: MySQL (freshfold)");
         System.out.println("========================================\n");
 
-        // Keeps backend running even if something triggers auto-exit
         try {
             Thread.currentThread().join();
         } catch (InterruptedException e) {
@@ -37,10 +34,6 @@ public class FreshFoldApplication {
         }
     }
 
-    /**
-     * Configure CORS to allow frontend (React) to communicate with backend
-     * Allows requests from http://localhost:3000
-     */
     @Bean
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {

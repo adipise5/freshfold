@@ -22,6 +22,9 @@ public class StudentService {
     @Autowired
     private PersonnelRepository personnelRepository;
 
+    @Autowired
+    private FileStorageService fileStorageService;
+
     private static final DateTimeFormatter formatter =
             DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
@@ -140,6 +143,17 @@ public class StudentService {
         response.setStudentRating(order.getStudentRating()); // Include rating
 
         return response;
+    }
+
+    /**
+     * Return sorted accessible URLs for all photos attached to an order.
+     * Calls FileStorageService.listFileNamesForOrder(orderId) and converts names to URLs.
+     */
+    public List<String> getOrderPhotos(Long orderId) {
+        List<String> filenames = fileStorageService.listFileNamesForOrder(orderId);
+        return filenames.stream()
+                .map(fileStorageService::buildFileUrl)
+                .collect(Collectors.toList());
     }
 
     /**

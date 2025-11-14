@@ -19,52 +19,104 @@ const ITEM_PRICES = {
     'Undergarments': 8, 'Socks': 5, 'Bed Sheets': 30, 'Towels': 15
 };
 
-// ================ LANDING PAGE ================
+// =================== Utility Components ===================
+
+/**
+ * OrderPhotoGallery
+ * Fetches ordered image URLs for a given orderId and displays them in a responsive grid.
+ *
+ * Expects backend endpoint: GET /api/student/orders/{orderId}/photos
+ * Backend may return absolute URLs (e.g., http://host/api/uploads/file.jpg) or relative paths (/api/uploads/..).
+ */
+function OrderPhotoGallery({ orderId }) {
+    const [photos, setPhotos] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (!orderId) return;
+        setLoading(true);
+        axios.get(`/student/orders/${orderId}/photos`)
+            .then(res => {
+                // Expect an array of URLs or relative paths
+                setPhotos(Array.isArray(res.data) ? res.data : []);
+            })
+            .catch(() => setPhotos([]))
+            .finally(() => setLoading(false));
+    }, [orderId]);
+
+    if (loading) return <p style={{ color: "#777" }}>Loading photos...</p>;
+    if (!photos || photos.length === 0)
+        return <p style={{ color: "#777", fontStyle: "italic" }}>No photos uploaded</p>;
+
+    const normalizeSrc = (p) => {
+        if (!p) return '';
+        if (p.startsWith('http://') || p.startsWith('https://')) return p;
+        // If backend returned a relative path like "/api/uploads/..." or "/uploads/..."
+        // prefix host + port
+        return `http://localhost:8080${p}`;
+    };
+
+    return (
+        <div className="photo-gallery" style={{ marginTop: '0.75rem' }}>
+            <strong>Clothing Photos:</strong>
+            <div className="photo-grid" style={{ marginTop: 8 }}>
+                {photos.map((p, idx) => (
+                    <img
+                        key={idx}
+                        src={normalizeSrc(p)}
+                        alt={`order-${orderId}-${idx+1}`}
+                        className="gallery-photo"
+                    />
+                ))}
+            </div>
+        </div>
+    );
+}
+
+// =================== Pages & Components ===================
+
 function LandingPage() {
     const navigate = useNavigate();
 
     return (
-        <div className="landing">
-            <nav className="navbar">
-                <div className="logo">🧺 FreshFold</div>
-                <div className="nav-buttons">
-                    <button onClick={() => navigate('/login')} className="btn-secondary">Login</button>
-                    <button onClick={() => navigate('/signup')} className="btn-primary">Sign Up</button>
+        <div className="landing-page">
+            <nav className="lp-navbar">
+                <div className="lp-logo">🧺 FreshFold</div>
+                <div className="lp-buttons">
+                    <button onClick={() => navigate('/login')} className="lp-btn-secondary">Login</button>
+                    <button onClick={() => navigate('/signup')} className="lp-btn-primary">Sign Up</button>
                 </div>
             </nav>
 
-            <section className="hero">
-                <h1>Welcome to FreshFold</h1>
-                <p>Premium Laundry Service for BITS Pilani Hostels</p>
-                <div className="hero-features">
-                    <div className="feature">
-                        <span className="icon">⚡</span>
-                        <h3>Quick Service</h3>
-                        <p>Get your laundry done in 1-3 days</p>
-                    </div>
-                    <div className="feature">
-                        <span className="icon">🤝</span>
-                        <h3>Trusted Personnel</h3>
-                        <p>Experienced laundry professionals</p>
-                    </div>
-                    <div className="feature">
-                        <span className="icon">🔒</span>
-                        <h3>Safe & Secure</h3>
-                        <p>Your clothes are in safe hands</p>
-                    </div>
-                    <div className="feature">
-                        <span className="icon">✨</span>
-                        <h3>Quality Care</h3>
-                        <p>Premium washing and ironing</p>
-                    </div>
+            <section className="lp-hero">
+                <h1 className="lp-title">
+                    Smart Laundry Service for <span className="brand">BITS Pilani</span>
+                </h1>
+                <p className="lp-subtitle">Fast • Safe • Reliable • Hostel-to-Hostel Delivery</p>
+
+                <div className="lp-features">
+                    {[
+                        { icon: "⚡", title: "Fast Delivery", desc: "Laundry in 1 – 3 days" },
+                        { icon: "🤝", title: "Trusted Staff", desc: "Verified & trained personnel" },
+                        { icon: "🔒", title: "Secure Handling", desc: "Guaranteed safe care" },
+                        { icon: "✨", title: "Premium Quality", desc: "Washing + ironing service" }
+                    ].map((f, i) => (
+                        <div key={i} className="lp-feature-box">
+                            <span className="lp-icon">{f.icon}</span>
+                            <h3>{f.title}</h3>
+                            <p>{f.desc}</p>
+                        </div>
+                    ))}
                 </div>
-                <button onClick={() => navigate('/signup')} className="btn-hero">Get Started</button>
+
+                <button className="lp-hero-btn" onClick={() => navigate('/signup')}>
+                    Get Started
+                </button>
             </section>
         </div>
     );
 }
 
-// ================ LOGIN PAGE ================
 function LoginPage() {
     const [role, setRole] = useState('STUDENT');
     const [formData, setFormData] = useState({ email: '', password: '' });
@@ -78,10 +130,8 @@ function LoginPage() {
         try {
             const response = await axios.post('/auth/login', { ...formData, role });
             const userData = response.data;
-
             localStorage.setItem('user', JSON.stringify(userData));
 
-            // Navigate based on role
             if (role === 'STUDENT') navigate('/student/dashboard');
             else if (role === 'PERSONNEL') navigate('/personnel/dashboard');
             else if (role === 'ADMIN') navigate('/admin/dashboard');
@@ -128,7 +178,6 @@ function LoginPage() {
     );
 }
 
-// ================ SIGNUP PAGE ================
 function SignupPage() {
     const [role, setRole] = useState('STUDENT');
     const [formData, setFormData] = useState({});
@@ -145,7 +194,7 @@ function SignupPage() {
             const endpoint = role === 'STUDENT' ? '/auth/signup/student' : '/auth/signup/personnel';
             await axios.post(endpoint, formData);
             setSuccess('Registration successful! Redirecting to login...');
-            setTimeout(() => navigate('/login'), 2000);
+            setTimeout(() => navigate('/login'), 1500);
         } catch (err) {
             setError(err.response?.data?.message || 'Signup failed');
         }
@@ -300,7 +349,7 @@ function StudentDashboard() {
     );
 }
 
-// ================ CREATE REQUEST ================
+// ================ CREATE REQUEST (updated flow) ================
 function CreateRequest({ user }) {
     const [personnel, setPersonnel] = useState([]);
     const [selectedPersonnel, setSelectedPersonnel] = useState(null);
@@ -331,8 +380,9 @@ function CreateRequest({ user }) {
     };
 
     const calculatePrice = () => {
-        let base = Object.entries(items).reduce((sum, [type, qty]) =>
-            sum + (qty * ITEM_PRICES[type]), 0
+        let base = Object.entries(items).reduce(
+            (sum, [type, qty]) => sum + qty * ITEM_PRICES[type],
+            0
         );
         if (urgencyDays === 1) return base * 1.5;
         if (urgencyDays === 2) return base * 1.25;
@@ -350,13 +400,7 @@ function CreateRequest({ user }) {
         }
 
         try {
-            // Upload photo first
-            const formData = new FormData();
-            formData.append('file', photo);
-            const uploadRes = await axios.post('/student/upload-photo', formData);
-            const photoUrl = uploadRes.data.data;
-
-            // Create order
+            // 1) Create order first (photoUrl left blank; will upload image next)
             const orderItems = Object.entries(items)
                 .filter(([_, qty]) => qty > 0)
                 .map(([type, qty]) => ({
@@ -365,20 +409,34 @@ function CreateRequest({ user }) {
                     pricePerItem: ITEM_PRICES[type]
                 }));
 
-            await axios.post('/student/orders', {
+            const orderPayload = {
                 studentId: user.id,
                 personnelId: selectedPersonnel,
                 items: orderItems,
                 serviceType,
                 urgencyDays,
-                photoUrl,
-                pickupLocation: `${user.userData.hostel}, Room ${user.userData.roomNumber}`
-            });
+                pickupLocation: `${user.userData.hostel}, Room ${user.userData.roomNumber}`,
+                photoUrl: ""
+            };
+
+            const orderResponse = await axios.post('/student/orders', orderPayload);
+            const orderId = orderResponse.data.data.id;
+
+            // 2) Upload photo using the orderId (backend will name it correctly: orderId.jpg / orderId_1.jpg ...)
+            const formData = new FormData();
+            formData.append('file', photo);
+
+            await axios.post(
+                `/student/upload-photo?orderId=${orderId}`,
+                formData,
+                { headers: { 'Content-Type': 'multipart/form-data' } }
+            );
 
             setMessage('Order created successfully!');
-            setTimeout(() => window.location.reload(), 1500);
+            setTimeout(() => window.location.reload(), 1200);
+
         } catch (err) {
-            setMessage('Failed to create order: ' + err.message);
+            setMessage('Failed to create order: ' + (err.response?.data?.message || err.message));
         }
     };
 
@@ -455,7 +513,7 @@ function CreateRequest({ user }) {
     );
 }
 
-// ================ MY ORDERS (Updated with Rating) ================
+// ================ MY ORDERS (Updated with gallery) ================
 function MyOrders({ userId }) {
     const [orders, setOrders] = useState([]);
 
@@ -479,7 +537,7 @@ function MyOrders({ userId }) {
         try {
             await axios.post(`/student/orders/${orderId}/rating`, { rating });
             alert('Rating submitted successfully!');
-            fetchOrders(); // Refresh orders to show rating
+            fetchOrders();
         } catch (err) {
             alert(err.response?.data?.message || 'Failed to submit rating');
         }
@@ -489,7 +547,6 @@ function MyOrders({ userId }) {
         const [hoveredStar, setHoveredStar] = useState(0);
 
         if (currentRating) {
-            // Already rated - show stars
             return (
                 <div className="rating-display">
                     <span>Your Rating: </span>
@@ -500,7 +557,6 @@ function MyOrders({ userId }) {
             );
         }
 
-        // Not rated yet - show clickable stars
         return (
             <div className="rating-input">
                 <span>Rate this service: </span>
@@ -546,7 +602,11 @@ function MyOrders({ userId }) {
                                 ))}
                             </div>
 
-                            {/* Rating Section - Show only for DONE orders */}
+                            {/* Photo gallery for students to view uploaded images */}
+                            <div style={{ marginTop: 8 }}>
+                                <OrderPhotoGallery orderId={order.id} />
+                            </div>
+
                             {order.status === 'DONE' && (
                                 <div className="order-rating" style={{ marginTop: '1rem', padding: '1rem', background: '#f9f9f9', borderRadius: '8px' }}>
                                     <StarRating orderId={order.id} currentRating={order.studentRating} />
@@ -614,7 +674,7 @@ function NewRequests({ userId }) {
     const [requests, setRequests] = useState([]);
 
     const fetchRequests = () => {
-        axios.get('/personnel/orders/pending').then(res => setRequests(res.data));
+        axios.get('/personnel/orders/pending').then(res => setRequests(res.data)).catch(() => setRequests([]));
     };
 
     useEffect(() => {
@@ -651,46 +711,45 @@ function NewRequests({ userId }) {
                 <p>No new requests</p>
             ) : (
                 requests.map(req => (
-                    <div key={req.id} className="request-card">
-                        <h4>Order #{req.id}</h4>
-                        <p><strong>Student:</strong> {req.student.fullName}</p>
-                        <p><strong>Hostel:</strong> {req.student.hostel}, Room {req.student.roomNumber}</p>
-                        <p><strong>Phone:</strong> {req.student.phoneNumber}</p>
-                        <p><strong>Service:</strong> {req.serviceType} ({req.urgencyDays} days)</p>
-                        <p><strong>Total:</strong> ₹{req.totalPrice}</p>
-                        <p><strong>Pickup:</strong> {req.pickupLocation}</p>
-                        <div className="request-items">
-                            <strong>Items:</strong>
-                            {req.items.map((item, idx) => (
-                                <span key={idx}>{item.itemType} x{item.quantity}</span>
-                            ))}
-                        </div>
-                        {req.photoUrl && (
-                            <div style={{ marginTop: '1rem' }}>
-                                <strong>Clothing Photo:</strong>
-                                <img
-                                    src={`http://localhost:8080${req.photoUrl}`}
-                                    alt="Clothes"
-                                    className="request-photo"
-                                    onError={(e) => {
-                                        e.target.onerror = null;
-                                        e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23ddd" width="200" height="200"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E';
-                                    }}
-                                    style={{
-                                        maxWidth: '100%',
-                                        maxHeight: '400px',
-                                        borderRadius: '8px',
-                                        marginTop: '0.5rem',
-                                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                                    }}
-                                />
+                    <div key={req.id} className="request-card two-column-card">
+
+                        {/* LEFT COLUMN */}
+                        <div className="left-column">
+                            <h4>Order #{req.id}</h4>
+
+                            <p><strong>Student:</strong> {req.student.fullName}</p>
+                            <p><strong>Hostel:</strong> {req.student.hostel}, Room {req.student.roomNumber}</p>
+                            <p><strong>Phone:</strong> {req.student.phoneNumber}</p>
+
+                            <p><strong>Service:</strong> {req.serviceType} ({req.urgencyDays} days)</p>
+                            <p><strong>Total:</strong> ₹{req.totalPrice}</p>
+                            <p><strong>Pickup:</strong> {req.pickupLocation}</p>
+
+                            <div className="request-items">
+                                <strong>Items:</strong>
+                                {req.items.map((item, idx) => (
+                                    <div key={idx}>{item.itemType} x{item.quantity}</div>
+                                ))}
                             </div>
-                        )}
-                        <div className="request-actions">
-                            <button onClick={() => handleAccept(req.id)} className="btn-success">Accept</button>
-                            <button onClick={() => handleReject(req.id)} className="btn-danger">Reject</button>
                         </div>
+
+                        {/* RIGHT COLUMN */}
+                        <div className="right-column">
+                            <OrderPhotoGallery orderId={req.id} />
+                        </div>
+
+                        {/* BOTTOM ACTION BUTTONS (OUTSIDE GRID) */}
+                        <div className="request-actions-bottom">
+                            <button onClick={() => handleAccept(req.id)} className="btn-success">
+                                Accept
+                            </button>
+                            <button onClick={() => handleReject(req.id)} className="btn-danger">
+                                Reject
+                            </button>
+                        </div>
+
                     </div>
+
                 ))
             )}
         </div>
@@ -698,11 +757,15 @@ function NewRequests({ userId }) {
 }
 
 // ================ IN PROGRESS ================
+// ================ IN PROGRESS (Two Column Layout) ================
 function InProgress({ userId }) {
     const [orders, setOrders] = useState([]);
 
     const fetchOrders = () => {
-        axios.get(`/personnel/orders/inprogress/${userId}`).then(res => setOrders(res.data));
+        axios
+            .get(`/personnel/orders/inprogress/${userId}`)
+            .then(res => setOrders(res.data))
+            .catch(() => setOrders([]));
     };
 
     useEffect(() => {
@@ -720,11 +783,11 @@ function InProgress({ userId }) {
     };
 
     const handleUpdateStatus = async (orderId, currentStatus) => {
-        const nextStatus = getNextStatus(currentStatus);
-        if (!nextStatus) return;
+        const next = getNextStatus(currentStatus);
+        if (!next) return;
 
         try {
-            await axios.put(`/personnel/orders/${orderId}/status`, { status: nextStatus });
+            await axios.put(`/personnel/orders/${orderId}/status`, { status: next });
             alert('Status updated!');
             fetchOrders();
         } catch (err) {
@@ -733,22 +796,45 @@ function InProgress({ userId }) {
     };
 
     return (
-        <div className="orders-list">
+        <div className="requests-list">
             <h3>In Progress</h3>
             {orders.length === 0 ? (
                 <p>No orders in progress</p>
             ) : (
                 orders.map(order => (
-                    <div key={order.id} className="order-card">
-                        <h4>Order #{order.id} - {order.status}</h4>
-                        <p><strong>Student:</strong> {order.student.fullName}</p>
-                        <p><strong>Total:</strong> ₹{order.totalPrice}</p>
-                        <button
-                            onClick={() => handleUpdateStatus(order.id, order.status)}
-                            className="btn-primary"
-                        >
-                            Update to {getNextStatus(order.status)}
-                        </button>
+                    <div key={order.id} className="request-card two-column-card">
+
+                        {/* LEFT SIDE */}
+                        <div className="left-column">
+                            <h4>Order #{order.id}</h4>
+                            <p><strong>Status:</strong> {order.status}</p>
+                            <p><strong>Student:</strong> {order.student.fullName}</p>
+                            <p><strong>Phone:</strong> {order.student.phoneNumber}</p>
+                            <p><strong>Total:</strong> ₹{order.totalPrice}</p>
+
+                            <div className="request-items">
+                                <strong>Items:</strong>
+                                {order.items.map((item, idx) => (
+                                    <div key={idx}>{item.itemType} x{item.quantity}</div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* RIGHT SIDE (PHOTOS) */}
+                        <div className="right-column">
+                            <OrderPhotoGallery orderId={order.id} />
+                        </div>
+
+                        {/* ACTION BUTTON */}
+                        <div className="request-actions-bottom">
+                            <button
+                                className="btn-primary"
+                                onClick={() => handleUpdateStatus(order.id, order.status)}
+                            >
+                                Update to {getNextStatus(order.status)}
+                            </button>
+                        </div>
+
                     </div>
                 ))
             )}
@@ -756,18 +842,28 @@ function InProgress({ userId }) {
     );
 }
 
-// ================ COMPLETED ================
+
+// ================ COMPLETED (Two Column Layout) ================
 function Completed({ userId }) {
     const [orders, setOrders] = useState([]);
     const [stats, setStats] = useState({ completedOrders: 0, totalEarnings: 0 });
 
     useEffect(() => {
-        axios.get(`/personnel/orders/completed/${userId}`).then(res => setOrders(res.data));
-        axios.get(`/personnel/stats/${userId}`).then(res => setStats(res.data));
+        axios
+            .get(`/personnel/orders/completed/${userId}`)
+            .then(res => setOrders(res.data))
+            .catch(() => setOrders([]));
+
+        axios
+            .get(`/personnel/stats/${userId}`)
+            .then(res => setStats(res.data))
+            .catch(() => {});
     }, [userId]);
 
     return (
-        <div>
+        <div className="requests-list">
+
+            {/* TOP STATS */}
             <div className="stats-summary">
                 <div className="stat-card">
                     <h4>Completed Orders</h4>
@@ -780,23 +876,47 @@ function Completed({ userId }) {
             </div>
 
             <h3>Completed Orders</h3>
+
             {orders.length === 0 ? (
                 <p>No completed orders yet</p>
             ) : (
-                <div className="orders-list">
-                    {orders.map(order => (
-                        <div key={order.id} className="order-card completed">
+                orders.map(order => (
+                    <div key={order.id} className="request-card two-column-card">
+
+                        {/* LEFT SIDE */}
+                        <div className="left-column">
                             <h4>Order #{order.id}</h4>
                             <p><strong>Student:</strong> {order.student.fullName}</p>
                             <p><strong>Total:</strong> ₹{order.totalPrice}</p>
-                            <p><strong>Completed:</strong> {order.updatedAt}</p>
+                            <p><strong>Completed on:</strong> {order.updatedAt}</p>
+
+                            <div className="request-items">
+                                <strong>Items:</strong>
+                                {order.items.map((item, idx) => (
+                                    <div key={idx}>{item.itemType} x{item.quantity}</div>
+                                ))}
+                            </div>
                         </div>
-                    ))}
-                </div>
+
+                        {/* RIGHT SIDE (PHOTOS) */}
+                        <div className="right-column">
+                            <OrderPhotoGallery orderId={order.id} />
+                        </div>
+
+                        {/* ACTION (optional future btns) */}
+                        <div className="request-actions-bottom">
+                            <button className="btn-primary">
+                                View Details
+                            </button>
+                        </div>
+
+                    </div>
+                ))
             )}
         </div>
     );
 }
+
 
 // ================ ADMIN DASHBOARD ================
 function AdminDashboard() {
@@ -811,8 +931,8 @@ function AdminDashboard() {
             return;
         }
 
-        axios.get('/admin/stats').then(res => setStats(res.data));
-        axios.get('/admin/orders/recent').then(res => setRecentOrders(res.data));
+        axios.get('/admin/stats').then(res => setStats(res.data)).catch(()=>{});
+        axios.get('/admin/orders/recent').then(res => setRecentOrders(res.data)).catch(()=>{});
     }, [navigate]);
 
     const handleLogout = () => {

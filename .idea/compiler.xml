@@ -10,6 +10,9 @@
         <module name="freshfold-backend" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="freshfold" target="11" />
+    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">

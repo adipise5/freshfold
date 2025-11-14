@@ -13,102 +13,156 @@ body {
 }
 
 /* ================ LANDING PAGE ================ */
-.landing {
+/* ===== LANDING PAGE DESIGN ===== */
+
+.landing-page {
     min-height: 100vh;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    overflow-x: hidden;
+    background: linear-gradient(to bottom right, #eef6ff, #ffffff);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-/* Navbar Styling */
-.navbar {
+/* NAVBAR */
+.lp-navbar {
+    width: 100%;
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    padding: 1.5rem 3rem;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 20px 60px;
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 
-.logo {
-    font-size: 2rem;
-    font-weight: 800;
-    color: white;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
-    letter-spacing: 1px;
-}
-
-.nav-buttons {
-    display: flex;
-    gap: 1rem;
-}
-
-/* Hero Section */
-.hero {
-    text-align: center;
-    padding: 4rem 2rem;
-    color: white;
-}
-
-.hero h1 {
-    font-size: 3.5rem;
-    margin-bottom: 1rem;
+.lp-logo {
+    font-size: 28px;
     font-weight: 700;
-    text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
-    animation: fadeInDown 0.8s ease-out;
+    color: #0a58ff;
 }
 
-.hero > p {
-    font-size: 1.5rem;
-    opacity: 0.95;
-    margin-bottom: 3rem;
-    font-weight: 300;
-    animation: fadeInUp 0.8s ease-out;
+/* NAV BUTTONS */
+.lp-buttons button {
+    margin-left: 12px;
 }
 
-/* Feature Cards */
-.hero-features {
+.lp-btn-primary {
+    background: #0a58ff;
+    color: white;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 10px;
+    font-size: 15px;
+    transition: 0.25s;
+}
+
+.lp-btn-primary:hover {
+    background: #0043d6;
+    transform: translateY(-2px);
+}
+
+.lp-btn-secondary {
+    background: transparent;
+    border: 2px solid #0a58ff;
+    padding: 10px 22px;
+    border-radius: 10px;
+    font-size: 15px;
+    color: #0a58ff;
+    transition: 0.25s;
+}
+
+.lp-btn-secondary:hover {
+    background: #e5efff;
+}
+
+/* HERO */
+.lp-hero {
+    max-width: 900px;
+    text-align: center;
+    margin-top: 70px;
+    padding: 20px;
+    animation: fadeIn 1.2s ease;
+}
+
+.lp-title {
+    font-size: 52px;
+    font-weight: 800;
+    color: #222;
+}
+
+.brand {
+    color: #0a58ff;
+}
+
+.lp-subtitle {
+    font-size: 18px;
+    color: #555;
+    margin-top: 10px;
+    margin-bottom: 40px;
+}
+
+/* FEATURES */
+.lp-features {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 2rem;
-    max-width: 1200px;
-    margin: 3rem auto;
-    padding: 0 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 25px;
+    margin-bottom: 50px;
 }
 
-.feature {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    padding: 2rem;
-    border-radius: 15px;
-    transition: transform 0.3s, box-shadow 0.3s;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    animation: fadeIn 0.8s ease-out;
+.lp-feature-box {
+    background: white;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+    transition: 0.3s ease;
 }
 
-.feature:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+.lp-feature-box:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 6px 22px rgba(0,0,0,0.1);
 }
 
-.feature .icon {
-    font-size: 3.5rem;
-    display: block;
-    margin-bottom: 1rem;
-    animation: bounce 2s infinite;
+.lp-icon {
+    font-size: 32px;
 }
 
-.feature h3 {
-    font-size: 1.4rem;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
+.lp-feature-box h3 {
+    font-size: 19px;
+    margin-top: 10px;
+    color: #222;
 }
 
-.feature p {
-    opacity: 0.9;
-    font-size: 1rem;
-    line-height: 1.5;
+.lp-feature-box p {
+    color: #666;
+    font-size: 14px;
 }
+
+/* HERO CTA */
+.lp-hero-btn {
+    font-size: 18px;
+    padding: 14px 40px;
+    background: #0a58ff;
+    color: white;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: 0.3s ease;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.lp-hero-btn:hover {
+    background: #0045d2;
+    transform: translateY(-3px);
+}
+
+/* ANIMATION */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
 
 /* ================ BUTTONS ================ */
 .btn-primary {
@@ -633,8 +687,17 @@ body {
 
 .orders-list,
 .requests-list {
-    display: grid;
-    gap: 1.5rem;
+    height: 50%;
+    width: 100%;
+    margin: 0 auto;
+    padding-top: 10px;
+}
+
+/* On mobile/tablet expand naturally */
+@media (max-width: 900px) {
+    .requests-list {
+        width: 90%;
+    }
 }
 
 /* Order/Request Card */
@@ -1629,6 +1692,68 @@ select:focus {
 .footer p {
     margin: 0.5rem 0;
     opacity: 0.8;
+}
+
+.photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.gallery-photo {
+    width: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.two-column-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding: 20px;
+    border-radius: 12px;
+    background: #fff;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+}
+
+.left-column {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.right-column {
+    border-left: 2px solid #eee;
+    padding-left: 20px;
+}
+
+.request-actions-bottom {
+    grid-column: 1 / span 2; /* stretch across both columns */
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.request-actions-bottom button {
+    min-width: 120px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .two-column-card {
+        grid-template-columns: 1fr;
+    }
+    .right-column {
+        border-left: none;
+        padding-left: 0;
+    }
+    .request-actions-bottom {
+        grid-column: 1;
+    }
 }
 
 /* ================ END OF STYLESHEET ================ */

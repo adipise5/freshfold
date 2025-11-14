@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.util.List;
 import java.util.Map;
 
@@ -27,18 +26,32 @@ public class StudentController {
     private FileStorageService fileStorageService;
 
     /**
-     * Upload clothing photo
+     * Upload clothing photo and save it under the order's naming convention.
+     *
+     * Requires orderId param. Example:
+     * POST /api/student/upload-photo?orderId=123  (form-data: file=...)
+     *
+     * Response contains stored filename and accessible URL.
      */
     @PostMapping("/upload-photo")
-    public ResponseEntity<ApiResponse> uploadPhoto(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<ApiResponse> uploadPhoto(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("orderId") Long orderId) {
         try {
-            fileStorageService.init();
-            String filePath = fileStorageService.storeFile(file);
+            fileStorageService.init(); // safe to call; idempotent
+            String storedFilename = fileStorageService.storeFileForOrder(file, orderId);
+            String fileUrl = fileStorageService.buildFileUrl(storedFilename);
+
+            // Optionally: you might want to update the LaundryOrder.photoUrl to the first image here.
+            // This code doesn't save the order entity automatically; client/service should call createOrder or update as appropriate.
 
             return ResponseEntity.ok(new ApiResponse(
                     true,
                     "Photo uploaded successfully",
-                    filePath
+                    Map.of(
+                            "filename", storedFilename,
+                            "url", fileUrl
+                    )
             ));
 
         } catch (Exception e) {
@@ -46,6 +59,24 @@ public class StudentController {
                     .body(new ApiResponse(false, "Upload failed: " + e.getMessage()));
         }
     }
+
+    /**
+     * Get all image URLs for an order, sorted by naming (orderId.jpg first, then orderId_1.jpg, orderId_2.jpg...)
+     * GET /api/student/orders/{orderId}/photos
+     */
+    @GetMapping("/orders/{orderId}/photos")
+    public ResponseEntity<?> getOrderPhotos(@PathVariable Long orderId) {
+        try {
+            List<String> urls = studentService.getOrderPhotos(orderId);
+            return ResponseEntity.ok(urls);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(new ApiResponse(false, "Failed to fetch photos: " + e.getMessage()));
+        }
+    }
+
+    // ---------------- existing endpoints ----------------
 
     /**
      * Create new laundry order
