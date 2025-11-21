@@ -1,4 +1,3 @@
-// Save as: src/main/java/com/freshfold/service/PersonnelService.java
 package com.freshfold.service;
 
 import com.freshfold.dto.*;
@@ -7,6 +6,7 @@ import com.freshfold.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -94,8 +94,9 @@ public class PersonnelService {
         return new ApiResponse(false, "Order rejected", reason);
     }
 
+    // 🔥 UPDATED — Accept timestamp explicitly
     @Transactional
-    public ApiResponse updateOrderStatus(Long orderId, String newStatus) {
+    public ApiResponse updateOrderStatus(Long orderId, String newStatus, LocalDateTime timestamp) {
         LaundryOrder order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
@@ -107,11 +108,13 @@ public class PersonnelService {
         }
 
         order.setStatus(targetStatus);
+
+        // Store timestamp in correct column
         switch (targetStatus) {
-            case PENDING_COLLECTION -> order.setCollectionAt(LocalDateTime.now());
-            case WASHING -> order.setWashingAt(LocalDateTime.now());
-            case IRONING -> order.setIroningAt(LocalDateTime.now());
-            case DONE -> order.setCompletedAt(LocalDateTime.now());
+            case PENDING_COLLECTION -> order.setCollectionAt(timestamp);
+            case WASHING -> order.setWashingAt(timestamp);
+            case IRONING -> order.setIroningAt(timestamp);
+            case DONE -> order.setCompletedAt(timestamp);
         }
 
         orderRepository.save(order);

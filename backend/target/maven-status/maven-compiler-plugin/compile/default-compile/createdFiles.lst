@@ -11,10 +11,12 @@ com/freshfold/controller/PersonnelController.class
 com/freshfold/model/Personnel.class
 com/freshfold/dto/LoginResponse.class
 com/freshfold/controller/AdminController.class
+com/freshfold/dto/OrderResponse$StatusHistoryEntry.class
 com/freshfold/repository/PersonnelRepository.class
 com/freshfold/dto/ApiResponse.class
 com/freshfold/model/LaundryOrder.class
 com/freshfold/dto/OrderResponse.class
+com/freshfold/model/LaundryOrder$StatusHistoryEntry.class
 com/freshfold/dto/AdminStatsResponse.class
 com/freshfold/FreshFoldApplication.class
 com/freshfold/model/Admin.class
@@ -23,6 +25,7 @@ com/freshfold/dto/StatusUpdateRequest.class
 com/freshfold/controller/AuthController.class
 com/freshfold/config/FileStorageProperties.class
 com/freshfold/repository/StudentRepository.class
+com/freshfold/model/User.class
 com/freshfold/repository/AdminRepository.class
 com/freshfold/model/Student.class
 com/freshfold/service/PersonnelService.class

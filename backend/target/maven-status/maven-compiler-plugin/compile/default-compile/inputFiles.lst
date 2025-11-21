@@ -1,5 +1,6 @@
 /Users/aditya/Desktop/freshfold/backend/src/main/java/com/freshfold/controller/AdminController.java
 /Users/aditya/Desktop/freshfold/backend/src/main/java/com/freshfold/model/LaundryOrder.java
+/Users/aditya/Desktop/freshfold/backend/src/main/java/com/freshfold/model/User.java
 /Users/aditya/Desktop/freshfold/backend/src/main/java/com/freshfold/dto/OrderRequest.java
 /Users/aditya/Desktop/freshfold/backend/src/main/java/com/freshfold/controller/StudentController.java
 /Users/aditya/Desktop/freshfold/backend/src/main/java/com/freshfold/service/PersonnelService.java

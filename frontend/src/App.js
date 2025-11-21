@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import './App.css';
@@ -513,17 +513,18 @@ function CreateRequest({ user }) {
     );
 }
 
-// ================ MY ORDERS (Updated with gallery) ================
+// ================ MY ORDERS (Two Column Layout + Gallery) ================
 function MyOrders({ userId }) {
     const [orders, setOrders] = useState([]);
 
-    useEffect(() => {
-        fetchOrders();
+    const fetchOrders = useCallback(() => {
+        axios.get(`/student/orders/${userId}`).then(res => setOrders(res.data));
     }, [userId]);
 
-    const fetchOrders = () => {
-        axios.get(`/student/orders/${userId}`).then(res => setOrders(res.data));
-    };
+    useEffect(() => {
+        fetchOrders();
+    }, [fetchOrders]);
+
 
     const getStatusColor = (status) => {
         const colors = {
@@ -535,15 +536,15 @@ function MyOrders({ userId }) {
 
     const submitRating = async (orderId, rating) => {
         try {
-            await axios.post(`/student/orders/${orderId}/rating`, { rating });
-            alert('Rating submitted successfully!');
+            await axios.post(`/student/orders/${orderId}/rating`, {rating});
+            alert('Rating submitted!');
             fetchOrders();
         } catch (err) {
             alert(err.response?.data?.message || 'Failed to submit rating');
         }
     };
 
-    const StarRating = ({ orderId, currentRating }) => {
+    const StarRating = ({orderId, currentRating}) => {
         const [hoveredStar, setHoveredStar] = useState(0);
 
         if (currentRating) {
@@ -567,10 +568,10 @@ function MyOrders({ userId }) {
                         onMouseEnter={() => setHoveredStar(star)}
                         onMouseLeave={() => setHoveredStar(0)}
                         onClick={() => submitRating(orderId, star)}
-                        style={{ cursor: 'pointer', fontSize: '1.5rem' }}
+                        style={{cursor: 'pointer', fontSize: '1.5rem'}}
                     >
-            ★
-          </span>
+                        ★
+                    </span>
                 ))}
             </div>
         );
@@ -579,39 +580,74 @@ function MyOrders({ userId }) {
     return (
         <div className="my-orders">
             <h3>My Orders</h3>
+
             {orders.length === 0 ? (
                 <p>No orders yet</p>
             ) : (
                 <div className="orders-list">
                     {orders.map(order => (
-                        <div key={order.id} className="order-card">
-                            <div className="order-header">
-                                <span className="order-id">Order #{order.id}</span>
-                                <span className="status" style={{ backgroundColor: getStatusColor(order.status) }}>
-                  {order.status}
-                </span>
+                        <div key={order.id} className="request-card two-column-card">
+
+                            {/* LEFT COLUMN */}
+                            <div className="left-column">
+                                <div className="order-header">
+                                    <span className="order-id">Order #{order.id}</span>
+                                    <span
+                                        className="status"
+                                        style={{backgroundColor: getStatusColor(order.status)}}
+                                    >
+                                    {order.status}
+                                </span>
+                                </div>
+
+                                <p><strong>Personnel:</strong> {order.personnel?.fullName || 'Not assigned'}</p>
+                                <p><strong>Service:</strong> {order.serviceType} ({order.urgencyDays} days)</p>
+                                <p><strong>Total:</strong> ₹{order.totalPrice}</p>
+                                <p><strong>Created:</strong> {order.createdAt}</p>
+
+                                {order.rejectionReason && (
+                                    <p className="rejection">
+                                        <strong>Rejection:</strong> {order.rejectionReason}
+                                    </p>
+                                )}
+
+                                {/* ITEMS */}
+                                <div className="request-items">
+                                    <strong>Items:</strong>
+                                    {order.items.map((item, idx) => (
+                                        <div key={idx}>{item.itemType} x{item.quantity}</div>
+                                    ))}
+                                </div>
+
+                                {/* STATUS TIMELINE */}
+                                <div className="status-history" style={{marginTop: "10px"}}>
+                                    <strong>Status Timeline:</strong>
+                                    {order.statusHistory && order.statusHistory.length > 0 ? (
+                                        order.statusHistory.map((h, idx) => (
+                                            <div key={idx}>
+                                                {h.status} → <small>{new Date(h.timestamp).toLocaleString()}</small>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p>No history available</p>
+                                    )}
+                                </div>
+
                             </div>
-                            <p><strong>Personnel:</strong> {order.personnel?.fullName || 'Not assigned'}</p>
-                            <p><strong>Service:</strong> {order.serviceType} ({order.urgencyDays} days)</p>
-                            <p><strong>Total:</strong> ₹{order.totalPrice}</p>
-                            <p><strong>Created:</strong> {order.createdAt}</p>
-                            {order.rejectionReason && <p className="rejection"><strong>Rejection:</strong> {order.rejectionReason}</p>}
-                            <div className="order-items">
-                                {order.items.map((item, idx) => (
-                                    <span key={idx}>{item.itemType} x{item.quantity}</span>
-                                ))}
+                            {/* left-column ends */}
+
+                            {/* RIGHT COLUMN (GALLERY) */}
+                            <div className="right-column">
+                                <OrderPhotoGallery orderId={order.id}/>
                             </div>
 
-                            {/* Photo gallery for students to view uploaded images */}
-                            <div style={{ marginTop: 8 }}>
-                                <OrderPhotoGallery orderId={order.id} />
-                            </div>
-
+                            {/* BOTTOM (RATING SECTION) */}
                             {order.status === 'DONE' && (
-                                <div className="order-rating" style={{ marginTop: '1rem', padding: '1rem', background: '#f9f9f9', borderRadius: '8px' }}>
-                                    <StarRating orderId={order.id} currentRating={order.studentRating} />
+                                <div className="request-actions-bottom" style={{marginTop: "1rem"}}>
+                                    <StarRating orderId={order.id} currentRating={order.studentRating}/>
                                 </div>
                             )}
+
                         </div>
                     ))}
                 </div>
@@ -620,435 +656,497 @@ function MyOrders({ userId }) {
     );
 }
 
+
 // ================ PERSONNEL DASHBOARD ================
-function PersonnelDashboard() {
-    const [activeTab, setActiveTab] = useState('new');
-    const [user, setUser] = useState(null);
-    const navigate = useNavigate();
+    function PersonnelDashboard() {
+        const [activeTab, setActiveTab] = useState('new');
+        const [user, setUser] = useState(null);
+        const navigate = useNavigate();
 
-    useEffect(() => {
-        const userData = JSON.parse(localStorage.getItem('user'));
-        if (!userData || userData.role !== 'PERSONNEL') {
-            navigate('/login');
-        } else {
-            setUser(userData);
-        }
-    }, [navigate]);
+        useEffect(() => {
+            const userData = JSON.parse(localStorage.getItem('user'));
+            if (!userData || userData.role !== 'PERSONNEL') {
+                navigate('/login');
+            } else {
+                setUser(userData);
+            }
+        }, [navigate]);
 
-    const handleLogout = () => {
-        localStorage.removeItem('user');
-        navigate('/');
-    };
+        const handleLogout = () => {
+            localStorage.removeItem('user');
+            navigate('/');
+        };
 
-    if (!user) return null;
+        if (!user) return null;
 
-    return (
-        <div className="dashboard">
-            <nav className="dashboard-nav">
-                <div className="logo">🧺 FreshFold</div>
-                <div className="user-info">
-                    <span>{user.fullName}</span>
-                    <button onClick={handleLogout} className="btn-secondary">Logout</button>
-                </div>
-            </nav>
+        return (
+            <div className="dashboard">
+                <nav className="dashboard-nav">
+                    <div className="logo">🧺 FreshFold</div>
+                    <div className="user-info">
+                        <span>{user.fullName}</span>
+                        <button onClick={handleLogout} className="btn-secondary">Logout</button>
+                    </div>
+                </nav>
 
-            <div className="dashboard-content">
-                <div className="tabs">
-                    <button className={activeTab === 'new' ? 'active' : ''} onClick={() => setActiveTab('new')}>New Requests</button>
-                    <button className={activeTab === 'progress' ? 'active' : ''} onClick={() => setActiveTab('progress')}>In Progress</button>
-                    <button className={activeTab === 'completed' ? 'active' : ''} onClick={() => setActiveTab('completed')}>Completed</button>
-                </div>
+                <div className="dashboard-content">
+                    <div className="tabs">
+                        <button className={activeTab === 'new' ? 'active' : ''} onClick={() => setActiveTab('new')}>New
+                            Requests
+                        </button>
+                        <button className={activeTab === 'progress' ? 'active' : ''}
+                                onClick={() => setActiveTab('progress')}>In Progress
+                        </button>
+                        <button className={activeTab === 'completed' ? 'active' : ''}
+                                onClick={() => setActiveTab('completed')}>Completed
+                        </button>
+                    </div>
 
-                <div className="tab-content">
-                    {activeTab === 'new' && <NewRequests userId={user.id} />}
-                    {activeTab === 'progress' && <InProgress userId={user.id} />}
-                    {activeTab === 'completed' && <Completed userId={user.id} />}
+                    <div className="tab-content">
+                        {activeTab === 'new' && <NewRequests userId={user.id}/>}
+                        {activeTab === 'progress' && <InProgress userId={user.id}/>}
+                        {activeTab === 'completed' && <Completed userId={user.id}/>}
+                    </div>
                 </div>
             </div>
-        </div>
-    );
-}
+        );
+    }
 
 // ================ NEW REQUESTS (Fixed Photo Display) ================
-function NewRequests({ userId }) {
-    const [requests, setRequests] = useState([]);
+    function NewRequests({userId}) {
+        const [requests, setRequests] = useState([]);
 
-    const fetchRequests = () => {
-        axios.get('/personnel/orders/pending').then(res => setRequests(res.data)).catch(() => setRequests([]));
-    };
+        const fetchRequests = () => {
+            axios.get('/personnel/orders/pending').then(res => setRequests(res.data)).catch(() => setRequests([]));
+        };
 
-    useEffect(() => {
-        fetchRequests();
-    }, []);
-
-    const handleAccept = async (orderId) => {
-        try {
-            await axios.post(`/personnel/orders/${orderId}/accept`, { personnelId: userId });
-            alert('Order accepted!');
+        useEffect(() => {
             fetchRequests();
-        } catch (err) {
-            alert('Failed to accept order');
-        }
-    };
+        }, []);
 
-    const handleReject = async (orderId) => {
-        const reason = prompt('Enter rejection reason:');
-        if (!reason) return;
+        const handleAccept = async (orderId) => {
+            try {
+                await axios.post(`/personnel/orders/${orderId}/accept`, {personnelId: userId});
+                alert('Order accepted!');
+                fetchRequests();
+            } catch (err) {
+                alert('Failed to accept order');
+            }
+        };
 
-        try {
-            await axios.post(`/personnel/orders/${orderId}/reject`, { rejectionReason: reason });
-            alert('Order rejected');
-            fetchRequests();
-        } catch (err) {
-            alert('Failed to reject order');
-        }
-    };
+        const handleReject = async (orderId) => {
+            const reason = prompt('Enter rejection reason:');
+            if (!reason) return;
 
-    return (
-        <div className="requests-list">
-            <h3>New Requests</h3>
-            {requests.length === 0 ? (
-                <p>No new requests</p>
-            ) : (
-                requests.map(req => (
-                    <div key={req.id} className="request-card two-column-card">
+            try {
+                await axios.post(`/personnel/orders/${orderId}/reject`, {rejectionReason: reason});
+                alert('Order rejected');
+                fetchRequests();
+            } catch (err) {
+                alert('Failed to reject order');
+            }
+        };
 
-                        {/* LEFT COLUMN */}
-                        <div className="left-column">
-                            <h4>Order #{req.id}</h4>
+        return (
+            <div className="requests-list">
+                <h3>New Requests</h3>
+                {requests.length === 0 ? (
+                    <p>No new requests</p>
+                ) : (
+                    requests.map(req => (
+                        <div key={req.id} className="request-card two-column-card">
 
-                            <p><strong>Student:</strong> {req.student.fullName}</p>
-                            <p><strong>Hostel:</strong> {req.student.hostel}, Room {req.student.roomNumber}</p>
-                            <p><strong>Phone:</strong> {req.student.phoneNumber}</p>
+                            {/* LEFT COLUMN */}
+                            <div className="left-column">
+                                <h4>Order #{req.id}</h4>
 
-                            <p><strong>Service:</strong> {req.serviceType} ({req.urgencyDays} days)</p>
-                            <p><strong>Total:</strong> ₹{req.totalPrice}</p>
-                            <p><strong>Pickup:</strong> {req.pickupLocation}</p>
+                                <p><strong>Student:</strong> {req.student.fullName}</p>
+                                <p><strong>Hostel:</strong> {req.student.hostel}, Room {req.student.roomNumber}</p>
+                                <p><strong>Phone:</strong> {req.student.phoneNumber}</p>
 
-                            <div className="request-items">
-                                <strong>Items:</strong>
-                                {req.items.map((item, idx) => (
-                                    <div key={idx}>{item.itemType} x{item.quantity}</div>
-                                ))}
+                                <p><strong>Service:</strong> {req.serviceType} ({req.urgencyDays} days)</p>
+                                <p><strong>Total:</strong> ₹{req.totalPrice}</p>
+                                <p><strong>Pickup:</strong> {req.pickupLocation}</p>
+
+                                <div className="request-items">
+                                    <strong>Items:</strong>
+                                    {req.items.map((item, idx) => (
+                                        <div key={idx}>{item.itemType} x{item.quantity}</div>
+                                    ))}
+                                </div>
                             </div>
+
+                            {/* RIGHT COLUMN */}
+                            <div className="right-column">
+                                <OrderPhotoGallery orderId={req.id}/>
+                            </div>
+
+                            {/* BOTTOM ACTION BUTTONS (OUTSIDE GRID) */}
+                            <div className="request-actions-bottom">
+                                <button onClick={() => handleAccept(req.id)} className="btn-success">
+                                    Accept
+                                </button>
+                                <button onClick={() => handleReject(req.id)} className="btn-danger">
+                                    Reject
+                                </button>
+                            </div>
+
                         </div>
 
-                        {/* RIGHT COLUMN */}
-                        <div className="right-column">
-                            <OrderPhotoGallery orderId={req.id} />
-                        </div>
-
-                        {/* BOTTOM ACTION BUTTONS (OUTSIDE GRID) */}
-                        <div className="request-actions-bottom">
-                            <button onClick={() => handleAccept(req.id)} className="btn-success">
-                                Accept
-                            </button>
-                            <button onClick={() => handleReject(req.id)} className="btn-danger">
-                                Reject
-                            </button>
-                        </div>
-
-                    </div>
-
-                ))
-            )}
-        </div>
-    );
-}
+                    ))
+                )}
+            </div>
+        );
+    }
 
 // ================ IN PROGRESS ================
-// ================ IN PROGRESS (Two Column Layout) ================
-function InProgress({ userId }) {
-    const [orders, setOrders] = useState([]);
+// ================ IN PROGRESS (Two Column Layout with Timestamp History) ================
+    function InProgress({userId}) {
+        const [orders, setOrders] = useState([]);
 
-    const fetchOrders = () => {
-        axios
-            .get(`/personnel/orders/inprogress/${userId}`)
-            .then(res => setOrders(res.data))
-            .catch(() => setOrders([]));
-    };
+        const fetchOrders = useCallback(() => {
+            axios
+                .get(`/personnel/orders/inprogress/${userId}`)
+                .then(res => setOrders(res.data))
+                .catch(() => setOrders([]));
+        }, [userId]);
 
-    useEffect(() => {
-        fetchOrders();
-    }, [userId]);
-
-    const getNextStatus = (currentStatus) => {
-        const flow = {
-            'ACCEPTED': 'PENDING_COLLECTION',
-            'PENDING_COLLECTION': 'WASHING',
-            'WASHING': 'IRONING',
-            'IRONING': 'DONE'
-        };
-        return flow[currentStatus];
-    };
-
-    const handleUpdateStatus = async (orderId, currentStatus) => {
-        const next = getNextStatus(currentStatus);
-        if (!next) return;
-
-        try {
-            await axios.put(`/personnel/orders/${orderId}/status`, { status: next });
-            alert('Status updated!');
+        useEffect(() => {
             fetchOrders();
-        } catch (err) {
-            alert('Failed to update status');
-        }
-    };
+        }, [fetchOrders]);
 
-    return (
-        <div className="requests-list">
-            <h3>In Progress</h3>
-            {orders.length === 0 ? (
-                <p>No orders in progress</p>
-            ) : (
-                orders.map(order => (
-                    <div key={order.id} className="request-card two-column-card">
+        const getNextStatus = (currentStatus) => {
+            const flow = {
+                'ACCEPTED': 'PENDING_COLLECTION',
+                'PENDING_COLLECTION': 'WASHING',
+                'WASHING': 'IRONING',
+                'IRONING': 'DONE'
+            };
+            return flow[currentStatus];
+        };
 
-                        {/* LEFT SIDE */}
-                        <div className="left-column">
-                            <h4>Order #{order.id}</h4>
-                            <p><strong>Status:</strong> {order.status}</p>
-                            <p><strong>Student:</strong> {order.student.fullName}</p>
-                            <p><strong>Phone:</strong> {order.student.phoneNumber}</p>
-                            <p><strong>Total:</strong> ₹{order.totalPrice}</p>
+        // 🔥 UPDATED — Send timestamp with status change
+        const handleUpdateStatus = async (orderId, currentStatus) => {
+            const next = getNextStatus(currentStatus);
+            if (!next) return;
 
-                            <div className="request-items">
-                                <strong>Items:</strong>
-                                {order.items.map((item, idx) => (
-                                    <div key={idx}>{item.itemType} x{item.quantity}</div>
-                                ))}
+            const timestamp = new Date().toISOString();
+
+            try {
+                await axios.put(`/personnel/orders/${orderId}/status`, {
+                    status: next,
+                    timestamp: timestamp
+                });
+
+                alert(`Status updated to ${next}!`);
+                fetchOrders();
+            } catch (err) {
+                alert('Failed to update status');
+            }
+        };
+
+        return (
+            <div className="requests-list">
+                <h3>In Progress</h3>
+                {orders.length === 0 ? (
+                    <p>No orders in progress</p>
+                ) : (
+                    orders.map(order => (
+                        <div key={order.id} className="request-card two-column-card">
+
+                            {/* LEFT SIDE */}
+                            <div className="left-column">
+                                <h4>Order #{order.id}</h4>
+                                <p><strong>Status:</strong> {order.status}</p>
+                                <p><strong>Student:</strong> {order.student.fullName}</p>
+                                <p><strong>Phone:</strong> {order.student.phoneNumber}</p>
+                                <p><strong>Total:</strong> ₹{order.totalPrice}</p>
+
+                                <div className="request-items">
+                                    <strong>Items:</strong>
+                                    {order.items.map((item, idx) => (
+                                        <div key={idx}>{item.itemType} x{item.quantity}</div>
+                                    ))}
+                                </div>
+
+                                {/* 🔥 STATUS TIMELINE ADDED */}
+                                <div className="status-history" style={{marginTop: "10px"}}>
+                                    <strong>Status Timeline:</strong>
+                                    {order.statusHistory?.length > 0 ? (
+                                        order.statusHistory.map((h, idx) => (
+                                            <div key={idx}>
+                                                {h.status} → <small>{new Date(h.timestamp).toLocaleString()}</small>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p>No history available</p>
+                                    )}
+                                </div>
+
                             </div>
+
+                            {/* RIGHT SIDE (PHOTOS) */}
+                            <div className="right-column">
+                                <OrderPhotoGallery orderId={order.id}/>
+                            </div>
+
+                            {/* ACTION BUTTON */}
+                            <div className="request-actions-bottom">
+                                <button
+                                    className="btn-primary"
+                                    onClick={() => handleUpdateStatus(order.id, order.status)}
+                                >
+                                    Update to {getNextStatus(order.status)}
+                                </button>
+                            </div>
+
                         </div>
-
-                        {/* RIGHT SIDE (PHOTOS) */}
-                        <div className="right-column">
-                            <OrderPhotoGallery orderId={order.id} />
-                        </div>
-
-                        {/* ACTION BUTTON */}
-                        <div className="request-actions-bottom">
-                            <button
-                                className="btn-primary"
-                                onClick={() => handleUpdateStatus(order.id, order.status)}
-                            >
-                                Update to {getNextStatus(order.status)}
-                            </button>
-                        </div>
-
-                    </div>
-                ))
-            )}
-        </div>
-    );
-}
-
-
-// ================ COMPLETED (Two Column Layout) ================
-function Completed({ userId }) {
-    const [orders, setOrders] = useState([]);
-    const [stats, setStats] = useState({ completedOrders: 0, totalEarnings: 0 });
-
-    useEffect(() => {
-        axios
-            .get(`/personnel/orders/completed/${userId}`)
-            .then(res => setOrders(res.data))
-            .catch(() => setOrders([]));
-
-        axios
-            .get(`/personnel/stats/${userId}`)
-            .then(res => setStats(res.data))
-            .catch(() => {});
-    }, [userId]);
-
-    return (
-        <div className="requests-list">
-
-            {/* TOP STATS */}
-            <div className="stats-summary">
-                <div className="stat-card">
-                    <h4>Completed Orders</h4>
-                    <p className="stat-value">{stats.completedOrders}</p>
-                </div>
-                <div className="stat-card">
-                    <h4>Total Earnings</h4>
-                    <p className="stat-value">₹{stats.totalEarnings}</p>
-                </div>
+                    ))
+                )}
             </div>
-
-            <h3>Completed Orders</h3>
-
-            {orders.length === 0 ? (
-                <p>No completed orders yet</p>
-            ) : (
-                orders.map(order => (
-                    <div key={order.id} className="request-card two-column-card">
-
-                        {/* LEFT SIDE */}
-                        <div className="left-column">
-                            <h4>Order #{order.id}</h4>
-                            <p><strong>Student:</strong> {order.student.fullName}</p>
-                            <p><strong>Total:</strong> ₹{order.totalPrice}</p>
-                            <p><strong>Completed on:</strong> {order.updatedAt}</p>
-
-                            <div className="request-items">
-                                <strong>Items:</strong>
-                                {order.items.map((item, idx) => (
-                                    <div key={idx}>{item.itemType} x{item.quantity}</div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* RIGHT SIDE (PHOTOS) */}
-                        <div className="right-column">
-                            <OrderPhotoGallery orderId={order.id} />
-                        </div>
-
-                        {/* ACTION (optional future btns) */}
-                        <div className="request-actions-bottom">
-                            <button className="btn-primary">
-                                View Details
-                            </button>
-                        </div>
-
-                    </div>
-                ))
-            )}
-        </div>
-    );
-}
+        );
+    }
 
 
-// ================ ADMIN DASHBOARD ================
-function AdminDashboard() {
-    const [stats, setStats] = useState(null);
-    const [recentOrders, setRecentOrders] = useState([]);
-    const navigate = useNavigate();
+// ================ COMPLETED (Two Column Layout with Status History) ================
+    function Completed({userId}) {
+        const [orders, setOrders] = useState([]);
+        const [stats, setStats] = useState({completedOrders: 0, totalEarnings: 0});
 
-    useEffect(() => {
-        const userData = JSON.parse(localStorage.getItem('user'));
-        if (!userData || userData.role !== 'ADMIN') {
-            navigate('/login');
-            return;
-        }
+        useEffect(() => {
+            axios
+                .get(`/personnel/orders/completed/${userId}`)
+                .then(res => setOrders(res.data))
+                .catch(() => setOrders([]));
 
-        axios.get('/admin/stats').then(res => setStats(res.data)).catch(()=>{});
-        axios.get('/admin/orders/recent').then(res => setRecentOrders(res.data)).catch(()=>{});
-    }, [navigate]);
+            axios
+                .get(`/personnel/stats/${userId}`)
+                .then(res => setStats(res.data))
+                .catch(() => {
+                });
+        }, [userId]);
 
-    const handleLogout = () => {
-        localStorage.removeItem('user');
-        navigate('/');
-    };
+        return (
+            <div className="requests-list">
 
-    if (!stats) return <div>Loading...</div>;
-
-    return (
-        <div className="dashboard">
-            <nav className="dashboard-nav">
-                <div className="logo">🧺 FreshFold Admin</div>
-                <button onClick={handleLogout} className="btn-secondary">Logout</button>
-            </nav>
-
-            <div className="admin-content">
-                <h2>Dashboard Overview</h2>
-
-                <div className="stats-grid">
+                {/* TOP STATS */}
+                <div className="stats-summary">
                     <div className="stat-card">
-                        <h3>Total Orders</h3>
-                        <p className="stat-value">{stats.totalOrders}</p>
-                    </div>
-                    <div className="stat-card">
-                        <h3>Completed</h3>
+                        <h4>Completed Orders</h4>
                         <p className="stat-value">{stats.completedOrders}</p>
                     </div>
                     <div className="stat-card">
-                        <h3>Pending</h3>
-                        <p className="stat-value">{stats.pendingOrders}</p>
-                    </div>
-                    <div className="stat-card">
-                        <h3>Total Revenue</h3>
-                        <p className="stat-value">₹{stats.totalRevenue}</p>
+                        <h4>Total Earnings</h4>
+                        <p className="stat-value">₹{stats.totalEarnings}</p>
                     </div>
                 </div>
 
-                <div className="reports-section">
-                    <div className="report-box">
-                        <h3>Hostel-wise Performance</h3>
-                        <table>
-                            <thead>
-                            <tr><th>Hostel</th><th>Orders</th><th>Revenue</th></tr>
-                            </thead>
-                            <tbody>
-                            {stats.hostelStats?.map(h => (
-                                <tr key={h.hostelName}>
-                                    <td>{h.hostelName}</td>
-                                    <td>{h.orderCount}</td>
-                                    <td>₹{h.revenue}</td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
+                <h3>Completed Orders</h3>
+
+                {orders.length === 0 ? (
+                    <p>No completed orders yet</p>
+                ) : (
+                    orders.map(order => (
+                        <div key={order.id} className="request-card two-column-card">
+
+                            {/* LEFT SIDE */}
+                            <div className="left-column">
+                                <h4>Order #{order.id}</h4>
+                                <p><strong>Student:</strong> {order.student.fullName}</p>
+                                <p><strong>Total:</strong> ₹{order.totalPrice}</p>
+                                <p><strong>Completed on:</strong> {order.updatedAt}</p>
+
+                                <div className="request-items">
+                                    <strong>Items:</strong>
+                                    {order.items.map((item, idx) => (
+                                        <div key={idx}>{item.itemType} x{item.quantity}</div>
+                                    ))}
+                                </div>
+
+                                {/* 🔥 STATUS TIMELINE ADDED */}
+                                <div className="status-history" style={{marginTop: "10px"}}>
+                                    <strong>Status Timeline:</strong>
+                                    {order.statusHistory?.length > 0 ? (
+                                        order.statusHistory.map((h, idx) => (
+                                            <div key={idx}>
+                                                {h.status} → <small>{new Date(h.timestamp).toLocaleString()}</small>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p>No history available</p>
+                                    )}
+                                </div>
+
+                            </div>
+
+                            {/* RIGHT SIDE (PHOTOS) */}
+                            <div className="right-column">
+                                <OrderPhotoGallery orderId={order.id}/>
+                            </div>
+
+                            {/* ACTION (optional future btns) */}
+                            <div className="request-actions-bottom">
+                                <button className="btn-primary">
+                                    View Details
+                                </button>
+                            </div>
+
+                        </div>
+                    ))
+                )}
+            </div>
+        );
+    }
+
+
+// ================ ADMIN DASHBOARD ================
+    function AdminDashboard() {
+        const [stats, setStats] = useState(null);
+        const [recentOrders, setRecentOrders] = useState([]);
+        const navigate = useNavigate();
+
+        useEffect(() => {
+            const userData = JSON.parse(localStorage.getItem('user'));
+            if (!userData || userData.role !== 'ADMIN') {
+                navigate('/login');
+                return;
+            }
+
+            axios.get('/admin/stats').then(res => setStats(res.data)).catch(() => {
+            });
+            axios.get('/admin/orders/recent').then(res => setRecentOrders(res.data)).catch(() => {
+            });
+        }, [navigate]);
+
+        const handleLogout = () => {
+            localStorage.removeItem('user');
+            navigate('/');
+        };
+
+        if (!stats) return <div>Loading...</div>;
+
+        return (
+            <div className="dashboard">
+                <nav className="dashboard-nav">
+                    <div className="logo">🧺 FreshFold Admin</div>
+                    <button onClick={handleLogout} className="btn-secondary">Logout</button>
+                </nav>
+
+                <div className="admin-content">
+                    <h2>Dashboard Overview</h2>
+
+                    <div className="stats-grid">
+                        <div className="stat-card">
+                            <h3>Total Orders</h3>
+                            <p className="stat-value">{stats.totalOrders}</p>
+                        </div>
+                        <div className="stat-card">
+                            <h3>Completed</h3>
+                            <p className="stat-value">{stats.completedOrders}</p>
+                        </div>
+                        <div className="stat-card">
+                            <h3>Pending</h3>
+                            <p className="stat-value">{stats.pendingOrders}</p>
+                        </div>
+                        <div className="stat-card">
+                            <h3>Total Revenue</h3>
+                            <p className="stat-value">₹{stats.totalRevenue}</p>
+                        </div>
                     </div>
 
-                    <div className="report-box">
-                        <h3>Personnel Performance</h3>
+                    <div className="reports-section">
+                        <div className="report-box">
+                            <h3>Hostel-wise Performance</h3>
+                            <table>
+                                <thead>
+                                <tr>
+                                    <th>Hostel</th>
+                                    <th>Orders</th>
+                                    <th>Revenue</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {stats.hostelStats?.map(h => (
+                                    <tr key={h.hostelName}>
+                                        <td>{h.hostelName}</td>
+                                        <td>{h.orderCount}</td>
+                                        <td>₹{h.revenue}</td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="report-box">
+                            <h3>Personnel Performance</h3>
+                            <table>
+                                <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Orders</th>
+                                    <th>Earnings</th>
+                                    <th>Rating</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {stats.personnelStats?.map(p => (
+                                    <tr key={p.name}>
+                                        <td>{p.name}</td>
+                                        <td>{p.ordersCompleted}</td>
+                                        <td>₹{p.earnings}</td>
+                                        <td>{'★'.repeat(Math.floor(p.rating))}</td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div className="recent-orders">
+                        <h3>Recent Orders</h3>
                         <table>
                             <thead>
-                            <tr><th>Name</th><th>Orders</th><th>Earnings</th><th>Rating</th></tr>
-                            </thead>
-                            <tbody>
-                            {stats.personnelStats?.map(p => (
-                                <tr key={p.name}>
-                                    <td>{p.name}</td>
-                                    <td>{p.ordersCompleted}</td>
-                                    <td>₹{p.earnings}</td>
-                                    <td>{'★'.repeat(Math.floor(p.rating))}</td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div className="recent-orders">
-                    <h3>Recent Orders</h3>
-                    <table>
-                        <thead>
-                        <tr><th>ID</th><th>Student</th><th>Personnel</th><th>Status</th><th>Amount</th></tr>
-                        </thead>
-                        <tbody>
-                        {recentOrders.map(o => (
-                            <tr key={o.id}>
-                                <td>#{o.id}</td>
-                                <td>{o.student.fullName}</td>
-                                <td>{o.personnel?.fullName || 'N/A'}</td>
-                                <td>{o.status}</td>
-                                <td>₹{o.totalPrice}</td>
+                            <tr>
+                                <th>ID</th>
+                                <th>Student</th>
+                                <th>Personnel</th>
+                                <th>Status</th>
+                                <th>Amount</th>
                             </tr>
-                        ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                            {recentOrders.map(o => (
+                                <tr key={o.id}>
+                                    <td>#{o.id}</td>
+                                    <td>{o.student.fullName}</td>
+                                    <td>{o.personnel?.fullName || 'N/A'}</td>
+                                    <td>{o.status}</td>
+                                    <td>₹{o.totalPrice}</td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-        </div>
-    );
-}
+        );
+    }
 
 // ================ MAIN APP ================
-function App() {
-    return (
-        <BrowserRouter>
-            <Routes>
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/signup" element={<SignupPage />} />
-                <Route path="/student/dashboard" element={<StudentDashboard />} />
-                <Route path="/personnel/dashboard" element={<PersonnelDashboard />} />
-                <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
-        </BrowserRouter>
-    );
-}
+    function App() {
+        return (
+            <BrowserRouter>
+                <Routes>
+                    <Route path="/" element={<LandingPage/>}/>
+                    <Route path="/login" element={<LoginPage/>}/>
+                    <Route path="/signup" element={<SignupPage/>}/>
+                    <Route path="/student/dashboard" element={<StudentDashboard/>}/>
+                    <Route path="/personnel/dashboard" element={<PersonnelDashboard/>}/>
+                    <Route path="/admin/dashboard" element={<AdminDashboard/>}/>
+                    <Route path="*" element={<Navigate to="/"/>}/>
+                </Routes>
+            </BrowserRouter>
+        );
+    }
 
-export default App;
+    export default App;

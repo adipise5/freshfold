@@ -5,6 +5,8 @@ import com.freshfold.service.PersonnelService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -77,6 +79,7 @@ public class PersonnelController {
         }
     }
 
+    // 🔥 UPDATED: Accepts timestamp to store status history
     @PutMapping("/orders/{orderId}/status")
     public ResponseEntity<ApiResponse> updateStatus(
             @PathVariable Long orderId,
@@ -84,7 +87,8 @@ public class PersonnelController {
         try {
             ApiResponse response = personnelService.updateOrderStatus(
                     orderId,
-                    request.getStatus()
+                    request.getStatus(),
+                    request.getTimestamp() != null ? request.getTimestamp() : LocalDateTime.now()
             );
             return ResponseEntity.ok(response);
         } catch (Exception e) {

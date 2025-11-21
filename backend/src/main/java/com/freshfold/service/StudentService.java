@@ -6,7 +6,10 @@ import com.freshfold.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,8 +28,8 @@ public class StudentService {
     @Autowired
     private FileStorageService fileStorageService;
 
-    private static final DateTimeFormatter formatter =
-            DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+
 
     @Transactional
     public ApiResponse createOrder(OrderRequest request) {
@@ -99,6 +102,7 @@ public class StudentService {
         OrderResponse response = new OrderResponse();
         response.setId(order.getId());
 
+        // ===== Student info =====
         Student student = order.getStudent();
         OrderResponse.StudentInfo studentInfo = new OrderResponse.StudentInfo(
                 student.getId(),
@@ -110,6 +114,7 @@ public class StudentService {
         );
         response.setStudent(studentInfo);
 
+        // ===== Personnel info =====
         if (order.getPersonnel() != null) {
             Personnel personnel = order.getPersonnel();
             OrderResponse.PersonnelInfo personnelInfo = new OrderResponse.PersonnelInfo(
@@ -122,6 +127,7 @@ public class StudentService {
             response.setPersonnel(personnelInfo);
         }
 
+        // ===== Items =====
         List<OrderItemDTO> itemDTOs = order.getItems().stream()
                 .map(item -> new OrderItemDTO(
                         item.getItemType(),
@@ -131,6 +137,7 @@ public class StudentService {
                 .collect(Collectors.toList());
         response.setItems(itemDTOs);
 
+        // ===== Basic fields =====
         response.setStatus(order.getStatus().toString());
         response.setServiceType(order.getServiceType());
         response.setUrgencyDays(order.getUrgencyDays());
@@ -140,14 +147,47 @@ public class StudentService {
         response.setRejectionReason(order.getRejectionReason());
         response.setCreatedAt(order.getCreatedAt().format(formatter));
         response.setUpdatedAt(order.getUpdatedAt().format(formatter));
-        response.setStudentRating(order.getStudentRating()); // Include rating
+        response.setStudentRating(order.getStudentRating());
+
+        // ===== NEW: status history for timeline =====
+        response.setStatusHistory(buildStatusHistory(order));
 
         return response;
     }
 
     /**
+     * Build a chronological status history from the timestamp fields
+     * in LaundryOrder. This is what the React UI displays as:
+     *   order.statusHistory.map(h => h.status + " -> " + h.timestamp)
+     */
+    private List<OrderResponse.StatusHistoryEntry> buildStatusHistory(LaundryOrder order) {
+        List<OrderResponse.StatusHistoryEntry> history = new ArrayList<>();
+
+        addIfNotNull(history, "PENDING", order.getCreatedAt());
+        addIfNotNull(history, "ACCEPTED", order.getAcceptedAt());
+        addIfNotNull(history, "PENDING_COLLECTION", order.getCollectionAt());
+        addIfNotNull(history, "WASHING", order.getWashingAt());
+        addIfNotNull(history, "IRONING", order.getIroningAt());
+        addIfNotNull(history, "DONE", order.getCompletedAt());
+
+        return history;
+    }
+
+    private void addIfNotNull(List<OrderResponse.StatusHistoryEntry> history,
+                              String status,
+                              LocalDateTime time) {
+        if (time != null) {
+            history.add(
+                    new OrderResponse.StatusHistoryEntry(
+                            status,
+                            time.format(formatter)
+                    )
+            );
+        }
+    }
+
+    /**
      * Return sorted accessible URLs for all photos attached to an order.
-     * Calls FileStorageService.listFileNamesForOrder(orderId) and converts names to URLs.
      */
     public List<String> getOrderPhotos(Long orderId) {
         List<String> filenames = fileStorageService.listFileNamesForOrder(orderId);

@@ -1,5 +1,6 @@
 package com.freshfold.dto;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class OrderResponse {
@@ -17,7 +18,10 @@ public class OrderResponse {
     private String createdAt;
     private String updatedAt;
 
-    private Integer studentRating; // NEW FIELD
+    private Integer studentRating; // rating given by student
+
+    // NEW: status history for timeline
+    private List<StatusHistoryEntry> statusHistory = new ArrayList<>();
 
     public OrderResponse() {}
 
@@ -63,6 +67,14 @@ public class OrderResponse {
     public Integer getStudentRating() { return studentRating; }
     public void setStudentRating(Integer studentRating) { this.studentRating = studentRating; }
 
+    public List<StatusHistoryEntry> getStatusHistory() {
+        return statusHistory;
+    }
+
+    public void setStatusHistory(List<StatusHistoryEntry> statusHistory) {
+        this.statusHistory = statusHistory;
+    }
+
     // ================= Inner Classes ================= //
 
     public static class StudentInfo {
@@ -75,7 +87,12 @@ public class OrderResponse {
 
         public StudentInfo() {}
 
-        public StudentInfo(Long id, String fullName, String studentId, String hostel, String roomNumber, String phoneNumber) {
+        public StudentInfo(Long id,
+                           String fullName,
+                           String studentId,
+                           String hostel,
+                           String roomNumber,
+                           String phoneNumber) {
             this.id = id;
             this.fullName = fullName;
             this.studentId = studentId;
@@ -112,7 +129,11 @@ public class OrderResponse {
 
         public PersonnelInfo() {}
 
-        public PersonnelInfo(Long id, String fullName, String employeeId, String phoneNumber, Double rating) {
+        public PersonnelInfo(Long id,
+                             String fullName,
+                             String employeeId,
+                             String phoneNumber,
+                             Double rating) {
             this.id = id;
             this.fullName = fullName;
             this.employeeId = employeeId;
@@ -134,5 +155,34 @@ public class OrderResponse {
 
         public Double getRating() { return rating; }
         public void setRating(Double rating) { this.rating = rating; }
+    }
+
+    // NEW: Timeline entry used by frontend as order.statusHistory[]
+    public static class StatusHistoryEntry {
+        private String status;
+        private String timestamp;
+
+        public StatusHistoryEntry() {}
+
+        public StatusHistoryEntry(String status, String timestamp) {
+            this.status = status;
+            this.timestamp = timestamp;
+        }
+
+        public String getStatus() {
+            return status;
+        }
+
+        public void setStatus(String status) {
+            this.status = status;
+        }
+
+        public String getTimestamp() {
+            return timestamp;
+        }
+
+        public void setTimestamp(String timestamp) {
+            this.timestamp = timestamp;
+        }
     }
 }

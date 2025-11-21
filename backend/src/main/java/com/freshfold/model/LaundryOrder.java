@@ -47,7 +47,7 @@ public class LaundryOrder {
     private String rejectionReason;
 
     @Column
-    private Integer studentRating; // New field: Rating (1–5)
+    private Integer studentRating;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -60,6 +60,39 @@ public class LaundryOrder {
     private LocalDateTime washingAt;
     private LocalDateTime ironingAt;
     private LocalDateTime completedAt;
+
+    // ===================== NEW: STATUS TIMELINE =====================
+    @ElementCollection
+    @CollectionTable(
+            name = "order_status_history",
+            joinColumns = @JoinColumn(name = "order_id")
+    )
+    private List<StatusHistoryEntry> statusHistory = new ArrayList<>();
+
+    @Embeddable
+    public static class StatusHistoryEntry {
+        private String status;
+        private LocalDateTime timestamp;
+
+        public StatusHistoryEntry() {}
+
+        public StatusHistoryEntry(String status, LocalDateTime timestamp) {
+            this.status = status;
+            this.timestamp = timestamp;
+        }
+
+        public String getStatus() { return status; }
+        public void setStatus(String status) { this.status = status; }
+
+        public LocalDateTime getTimestamp() { return timestamp; }
+        public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
+    }
+
+    public void addStatusHistory(String status, LocalDateTime timestamp) {
+        statusHistory.add(new StatusHistoryEntry(status, timestamp));
+    }
+    // =================================================================
+
 
     public LaundryOrder() {}
 
