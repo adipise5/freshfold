@@ -349,7 +349,7 @@ function StudentDashboard() {
     );
 }
 
-// ================ CREATE REQUEST (updated flow) ================
+// ================ CREATE REQUEST ================
 function CreateRequest({ user }) {
     const [personnel, setPersonnel] = useState([]);
     const [selectedPersonnel, setSelectedPersonnel] = useState(null);
@@ -513,7 +513,7 @@ function CreateRequest({ user }) {
     );
 }
 
-// ================ MY ORDERS (Two Column Layout + Gallery) ================
+// ================ MY ORDERS  ================
 function MyOrders({ userId }) {
     const [orders, setOrders] = useState([]);
 
@@ -712,7 +712,7 @@ function MyOrders({ userId }) {
         );
     }
 
-// ================ NEW REQUESTS (Fixed Photo Display) ================
+// ================ NEW REQUESTS ================
     function NewRequests({userId}) {
         const [requests, setRequests] = useState([]);
 
@@ -800,7 +800,6 @@ function MyOrders({ userId }) {
     }
 
 // ================ IN PROGRESS ================
-// ================ IN PROGRESS (Two Column Layout with Timestamp History) ================
     function InProgress({userId}) {
         const [orders, setOrders] = useState([]);
 
@@ -908,7 +907,7 @@ function MyOrders({ userId }) {
     }
 
 
-// ================ COMPLETED (Two Column Layout with Status History) ================
+// ================ COMPLETED ================
     function Completed({userId}) {
         const [orders, setOrders] = useState([]);
         const [stats, setStats] = useState({completedOrders: 0, totalEarnings: 0});
