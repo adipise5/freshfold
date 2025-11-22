@@ -16,7 +16,6 @@ com/freshfold/repository/PersonnelRepository.class
 com/freshfold/dto/ApiResponse.class
 com/freshfold/model/LaundryOrder.class
 com/freshfold/dto/OrderResponse.class
-com/freshfold/model/LaundryOrder$StatusHistoryEntry.class
 com/freshfold/dto/AdminStatsResponse.class
 com/freshfold/FreshFoldApplication.class
 com/freshfold/model/Admin.class

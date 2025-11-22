@@ -1,13 +1,18 @@
 package com.freshfold.service;
 
-import com.freshfold.dto.*;
-import com.freshfold.model.*;
-import com.freshfold.repository.*;
+import com.freshfold.dto.ApiResponse;
+import com.freshfold.dto.OrderResponse;
+import com.freshfold.model.LaundryOrder;
+import com.freshfold.model.OrderStatus;
+import com.freshfold.model.Personnel;
+import com.freshfold.repository.OrderRepository;
+import com.freshfold.repository.PersonnelRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 @Service
@@ -22,6 +27,9 @@ public class PersonnelService {
     @Autowired
     private StudentService studentService;
 
+    private static final ZoneId IST = ZoneId.of("Asia/Kolkata");
+
+    // ===== FETCH REQUESTS =====
     public List<OrderResponse> getPendingRequests() {
         List<LaundryOrder> orders = orderRepository
                 .findByStatusOrderByCreatedAtDesc(OrderStatus.PENDING);
@@ -56,6 +64,7 @@ public class PersonnelService {
                 .toList();
     }
 
+    // ===== ACCEPT REQUEST =====
     @Transactional
     public ApiResponse acceptOrder(Long orderId, Long personnelId) {
         LaundryOrder order = orderRepository.findById(orderId)
@@ -69,7 +78,7 @@ public class PersonnelService {
                 .orElseThrow(() -> new RuntimeException("Personnel not found"));
 
         order.setStatus(OrderStatus.ACCEPTED);
-        order.setAcceptedAt(LocalDateTime.now());
+        order.setAcceptedAt(LocalDateTime.now(IST));
         order.setPersonnel(personnel);
 
         orderRepository.save(order);
@@ -77,6 +86,7 @@ public class PersonnelService {
         return new ApiResponse(true, "Order accepted successfully");
     }
 
+    // ===== REJECT REQUEST =====
     @Transactional
     public ApiResponse rejectOrder(Long orderId, String reason) {
         LaundryOrder order = orderRepository.findById(orderId)
@@ -94,9 +104,9 @@ public class PersonnelService {
         return new ApiResponse(false, "Order rejected", reason);
     }
 
-    // 🔥 UPDATED — Accept timestamp explicitly
+    // ===== UPDATE ORDER STATUS WITH LOCAL IST TIMESTAMP =====
     @Transactional
-    public ApiResponse updateOrderStatus(Long orderId, String newStatus, LocalDateTime timestamp) {
+    public ApiResponse updateOrderStatus(Long orderId, String newStatus) {
         LaundryOrder order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
@@ -109,12 +119,26 @@ public class PersonnelService {
 
         order.setStatus(targetStatus);
 
-        // Store timestamp in correct column
+        // Capture actual local timestamp at click
+        LocalDateTime timestamp = LocalDateTime.now(IST);
+
         switch (targetStatus) {
-            case PENDING_COLLECTION -> order.setCollectionAt(timestamp);
-            case WASHING -> order.setWashingAt(timestamp);
-            case IRONING -> order.setIroningAt(timestamp);
-            case DONE -> order.setCompletedAt(timestamp);
+            case PENDING_COLLECTION -> {
+                if (order.getCollectionAt() == null)
+                    order.setCollectionAt(timestamp);
+            }
+            case WASHING -> {
+                if (order.getWashingAt() == null)
+                    order.setWashingAt(timestamp);
+            }
+            case IRONING -> {
+                if (order.getIroningAt() == null)
+                    order.setIroningAt(timestamp);
+            }
+            case DONE -> {
+                if (order.getCompletedAt() == null)
+                    order.setCompletedAt(timestamp);
+            }
         }
 
         orderRepository.save(order);
@@ -122,6 +146,7 @@ public class PersonnelService {
         return new ApiResponse(true, "Order status updated to " + targetStatus);
     }
 
+    // ===== VALID TRANSITIONS =====
     private boolean isValidStatusTransition(OrderStatus current, OrderStatus target) {
         return switch (current) {
             case ACCEPTED -> target == OrderStatus.PENDING_COLLECTION;
@@ -132,6 +157,7 @@ public class PersonnelService {
         };
     }
 
+    // ===== STATS =====
     public Map<String, Object> getPersonnelStats(Long personnelId) {
         Long completedOrders = orderRepository
                 .countByPersonnelIdAndStatus(personnelId, OrderStatus.DONE);

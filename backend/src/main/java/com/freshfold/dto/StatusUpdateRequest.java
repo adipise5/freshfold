@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 
 public class StatusUpdateRequest {
     private String status;
-    private LocalDateTime timestamp;
 
     public StatusUpdateRequest() {}
 
@@ -14,13 +13,5 @@ public class StatusUpdateRequest {
 
     public void setStatus(String status) {
         this.status = status;
-    }
-
-    public LocalDateTime getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(LocalDateTime timestamp) {
-        this.timestamp = timestamp;
     }
 }

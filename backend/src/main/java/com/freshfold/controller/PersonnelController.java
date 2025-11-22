@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +16,8 @@ public class PersonnelController {
 
     @Autowired
     private PersonnelService personnelService;
+
+    // ==================== GET REQUESTS ====================
 
     @GetMapping("/orders/pending")
     public ResponseEntity<?> getPendingRequests() {
@@ -51,6 +52,8 @@ public class PersonnelController {
         }
     }
 
+    // ==================== ACCEPT ORDER ====================
+
     @PostMapping("/orders/{orderId}/accept")
     public ResponseEntity<ApiResponse> acceptOrder(
             @PathVariable Long orderId,
@@ -64,6 +67,8 @@ public class PersonnelController {
                     .body(new ApiResponse(false, "Failed to accept order: " + e.getMessage()));
         }
     }
+
+    // ==================== REJECT ORDER ====================
 
     @PostMapping("/orders/{orderId}/reject")
     public ResponseEntity<ApiResponse> rejectOrder(
@@ -79,7 +84,8 @@ public class PersonnelController {
         }
     }
 
-    // 🔥 UPDATED: Accepts timestamp to store status history
+    // ==================== UPDATE STATUS ====================
+
     @PutMapping("/orders/{orderId}/status")
     public ResponseEntity<ApiResponse> updateStatus(
             @PathVariable Long orderId,
@@ -87,8 +93,7 @@ public class PersonnelController {
         try {
             ApiResponse response = personnelService.updateOrderStatus(
                     orderId,
-                    request.getStatus(),
-                    request.getTimestamp() != null ? request.getTimestamp() : LocalDateTime.now()
+                    request.getStatus()
             );
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -96,6 +101,8 @@ public class PersonnelController {
                     .body(new ApiResponse(false, "Failed to update status: " + e.getMessage()));
         }
     }
+
+    // ==================== STATS ====================
 
     @GetMapping("/stats/{personnelId}")
     public ResponseEntity<?> getPersonnelStats(@PathVariable Long personnelId) {
